@@ -8,12 +8,14 @@ class LayoutExtension(Extension):
 
     def __init__(self, environment):
         super(LayoutExtension, self).__init__(environment)
-        environment.extend(default_layout="layout.html")
+        environment.extend(default_layout="layout.html",
+                           default_layout_block="content",
+                           disable_layout=False)
 
     def parse(self, parser):
         lineno = parser.stream.next().lineno
         template = None
-        block_name = "content"
+        block_name = self.environment.default_layout_block
         if not parser.stream.current.test("block_end"):
             template = parser.parse_expression()
             if parser.stream.skip_if("comma"):
@@ -35,16 +37,22 @@ class LayoutExtension(Extension):
         blocks = []
         wrap_block = True
         wrap_nodes = []
+        default_block = None
         # extracts blocks node out of the body
         for node in body:
             if isinstance(node, nodes.Block):
                 if node.name == block_name:
                     wrap_block = False
+                    default_block = node
                 blocks.append(node)
             else:
                 wrap_nodes.append(node)
         if wrap_block and wrap_nodes:
-            # wrap nodes outside which were not wrapped in a block node
-            blocks.append(nodes.Block(block_name, wrap_nodes, False, lineno=lineno))
+            # wrap nodes which were not wrapped in a block node
+            default_block = nodes.Block(block_name, wrap_nodes, False, lineno=lineno)
+            blocks.append(default_block)
+
+        if self.environment.disable_layout:
+            return default_block
 
         return [nodes.Extends(template, lineno=lineno)] + blocks

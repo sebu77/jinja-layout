@@ -27,6 +27,10 @@ class JinjaLayoutTestCase(unittest.TestCase):
         html = self.env.get_template("noblock.html").render()
         self.assertIn("data=\nhello world", html)
 
+    def test_disable_layout(self):
+        self.env.disable_layout = True
+        html = self.env.get_template("blocks.html").render()
+        self.assertEquals("hello world", html)
 
 if __name__ == '__main__':
     unittest.main()
